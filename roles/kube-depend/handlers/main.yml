@@ -1,0 +1,5 @@
+---
+# handlers file for kubernetes
+- name: disable SELinux now
+  command: setenforce 0
+

@@ -1,0 +1,37 @@
+
+    - name: initialize the cluster
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 >> cluster_initialized.txt  
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+    - name: create .kube directory
+      become: yes
+      become_user: kube
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+    - name: check if /etc/kubernetes/admin.conf file is exist
+      stat: 
+        path: /etc/kubernetes/admin.conf
+      register: adminConf
+
+    - name: generate admin.conf file
+      become: yes
+      become_user: root
+      shell: |
+              sudo rm /etc/containerd/config.toml
+              sudo systemctl stop containerd
+              sudo systemctl start containerd
+              sudo kubeadm init >> cluster_initialized.txt
+      when: adminConf.stat.exists == False
+
+    - name: export environment
+      become: yes
+      become_user: root
+      shell: |
+              sudo cp /etc/kubernetes/admin.conf /home/kube/admin.conf
+              sudo chown $(id -u):$(id -g) /home/kube/admin.conf
+              export KUBECONFIG=/home/kube/admin.conf
+ 
+    
